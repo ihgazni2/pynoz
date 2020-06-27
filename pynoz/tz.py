@@ -118,5 +118,44 @@ def zone2dict(zone):
     return(d)
 
 
+def utcoffset2tmzone(offset):
+    delta = timedelta(0,offset) if(offset>=0) else timedelta(-1,86400+offset)
+    tmzone = timezone(delta,'GMT')
+    return(tmzone)
 
 
+def z2offset(z):
+    sign = z[0]
+    h = int(z[1:3])
+    min = int(z[3:5])
+    offset = h*3600 + min * 60
+    offset = offset if(sign=='+') else -offset
+    return(offset)
+
+def z2tmzone(z):
+    offset = z2offset(z)
+    tmzone = utcoffset2tmzone(offset)
+    return(tmzone)
+
+def zone2tmzone(zone):
+    global AN_Z_MD
+    global ZONES_Z_MD
+    z = '+0000'
+    if(zone in AN_Z_MD):
+        z = AN_Z_MD[zone]
+    elif(zone in ZONES_Z_MD):
+        z = ZONES_Z_MD[zone]
+    else:
+        return(None)
+    return(z2tmzone(z))
+
+
+def dict2tmzone(d):
+    return(utcoffset2tmzone(d['soffset']))
+
+
+
+def get_soffset_from_tmzone(tmzone):
+    dt = datetime(1, 1, 1, 0, 0, 0, 000000, tzinfo=tmzone)
+    delta = dt.utcoffset()
+    return(delta.total_seconds())

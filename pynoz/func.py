@@ -26,7 +26,7 @@
 #mw           week-of-month           每月第几周
 
 
-#wd           weekday                 星期几
+#wd           isoweekday                 星期几  星期日是7
 
 
 #dt           daytime
@@ -36,15 +36,97 @@ import time
 from datetime import datetime,timedelta,timezone
 import pytz
 import calendar
-from pynoz.tz import zone2dict,ZONES_Z_MD 
+from pynoz.tz import zone2dict,ZONES_Z_MD,utcoffset2tmzone,get_soffset_from_tmzone 
+from pynoz.tz import z2offset,z2tmzone,zone2tmzone
+from pynoz.tz import dict2tmzone as tzdict2tmzone
 from datetime import date as datetme_date
+import efuntool.efuntool as eftl
+
+
 
 DICT_KL = ['y', 'm', 'd', 'h', 'min', 's', 'ms', 'ts', 'mts', 'tzname', 'soffset', 'msoffset', 'yq', 'yw', 'yd', 'qm', 'qw', 'qd', 'mt', 'mw', 'td', 'wd']
 
 
-DATE_FMT = [
-    
-]
+DATE_FMT_MD = { 
+    '%a, %d %b %Y %H:%M:%S GMT':'rfc1123',
+    '%d %b %Y %H:%M:%S GMT':'rfc1123_nowkday',
+    '%a, %d %b %Y %H:%M:%S':'rfc1123_notz',
+    '%a, %d %b %Y %H:%M:%S %z':'rfc1123_tzoffset',
+    '%a, %d-%b-%Y %H:%M:%S GMT':'rfc1123_hypen',
+    '%A, %d-%b-%y %H:%M:%S GMT':'rfc850',
+    '%d-%b-%y %H:%M:%S GMT':'rfc850_nowkday',
+    '%a, %d-%b-%y %H:%M:%S GMT':'rfc850_a',
+    '%A, %d-%b-%Y %H:%M:%S GMT':'rfc850_broken',
+    '%d-%b-%Y %H:%M:%S GMT':'rfc850_broken_nowkday',
+    '%a, %b %d %H:%M:%S %Y':'asctime',
+    '%Y-%m-%d %H:%M:%S %z':'iso8601',
+    "%a %b %d %Y %H:%M:%S %Z%z":'abdYHMSZz',
+    "%a %b %d %Y %H:%M:%S":'abdYHMS',
+    "%Y-%m-%dT%H:%M:%S.%fZ":'nodejs',
+    "%Y-%m-%d %H:%M:%S.%f":'YmdHMSf',
+    "%Y-%m-%d %H:%M:%S.%f %Z%z":'YmdHMSfZz',
+    '%Y-%m-%d %H:%M:%S %Z %z':'YmdHMSZz',
+    'rfc1123': '%a, %d %b %Y %H:%M:%S GMT',
+    'rfc1123_nowkday': '%d %b %Y %H:%M:%S GMT',
+    'rfc1123_notz': '%a, %d %b %Y %H:%M:%S',
+    'rfc1123_tzoffset': '%a, %d %b %Y %H:%M:%S %z',
+    'rfc1123_hypen': '%a, %d-%b-%Y %H:%M:%S GMT',
+    'rfc850': '%A, %d-%b-%y %H:%M:%S GMT',
+    'rfc850_nowkday': '%d-%b-%y %H:%M:%S GMT',
+    'rfc850_a': '%a, %d-%b-%y %H:%M:%S GMT',
+    'rfc850_broken': '%A, %d-%b-%Y %H:%M:%S GMT',
+    'rfc850_broken_nowkday': '%d-%b-%Y %H:%M:%S GMT',
+    'asctime': '%a, %b %d %H:%M:%S %Y',
+    'iso8601': '%Y-%m-%d %H:%M:%S %z',
+    'abdYHMSZz': '%a %b %d %Y %H:%M:%S %Z %z',
+    'abdYHMS': '%a %b %d %Y %H:%M:%S',
+    'nodejs': '%Y-%m-%dT%H:%M:%S.%fZ',
+    'YmdHMSf': '%Y-%m-%d %H:%M:%S.%f',
+    'YmdHMSfZz': '%Y-%m-%d %H:%M:%S.%f %Z %z',
+    'YmdHMSZz': '%Y-%m-%d %H:%M:%S %Z %z',
+}
+
+NAME_TO_FMT_DICT = {
+    'rfc1123': '%a, %d %b %Y %H:%M:%S GMT',
+    'rfc1123_nowkday': '%d %b %Y %H:%M:%S GMT',
+    'rfc1123_notz': '%a, %d %b %Y %H:%M:%S',
+    'rfc1123_tzoffset': '%a, %d %b %Y %H:%M:%S %z',
+    'rfc1123_hypen': '%a, %d-%b-%Y %H:%M:%S GMT',
+    'rfc850': '%A, %d-%b-%y %H:%M:%S GMT',
+    'rfc850_nowkday': '%d-%b-%y %H:%M:%S GMT',
+    'rfc850_a': '%a, %d-%b-%y %H:%M:%S GMT',
+    'rfc850_broken': '%A, %d-%b-%Y %H:%M:%S GMT',
+    'rfc850_broken_nowkday': '%d-%b-%Y %H:%M:%S GMT',
+    'asctime': '%a, %b %d %H:%M:%S %Y',
+    'iso8601': '%Y-%m-%d %H:%M:%S %z',
+    'abdYHMSZz': '%a %b %d %Y %H:%M:%S %Z %z',
+    'abdYHMS': '%a %b %d %Y %H:%M:%S',
+    'nodejs': '%Y-%m-%dT%H:%M:%S.%fZ',
+    'YmdHMSf': '%Y-%m-%d %H:%M:%S.%f',
+    'YmdHMSfZz': '%Y-%m-%d %H:%M:%S.%f %Z %z',
+    'YmdHMSZz':'%Y-%m-%d %H:%M:%S %Z %z'
+}
+
+FMT_TO_NAME_DICT = {
+    '%a, %d %b %Y %H:%M:%S GMT':'rfc1123',
+    '%d %b %Y %H:%M:%S GMT':'rfc1123_nowkday',
+    '%a, %d %b %Y %H:%M:%S':'rfc1123_notz',
+    '%a, %d %b %Y %H:%M:%S %z':'rfc1123_tzoffset',
+    '%a, %d-%b-%Y %H:%M:%S GMT':'rfc1123_hypen',
+    '%A, %d-%b-%y %H:%M:%S GMT':'rfc850',
+    '%d-%b-%y %H:%M:%S GMT':'rfc850_nowkday',
+    '%a, %d-%b-%y %H:%M:%S GMT':'rfc850_a',
+    '%A, %d-%b-%Y %H:%M:%S GMT':'rfc850_broken',
+    '%d-%b-%Y %H:%M:%S GMT':'rfc850_broken_nowkday',
+    '%a, %b %d %H:%M:%S %Y':'asctime',
+    '%Y-%m-%d %H:%M:%S %z':'iso8601',
+    "%a %b %d %Y %H:%M:%S %Z%z":'abdYHMSZz',
+    "%a %b %d %Y %H:%M:%S":'abdYHMS',
+    "%Y-%m-%dT%H:%M:%S.%fZ":'nodejs',
+    "%Y-%m-%d %H:%M:%S.%f":'YmdHMSf',
+    "%Y-%m-%d %H:%M:%S.%f %Z%z":'YmdHMSfZz',
+    '%Y-%m-%d %H:%M:%S %Z %z':'YmdHMSZz'
+}
 
 
 
@@ -150,9 +232,12 @@ def dt2dict(dt):
     ts = dt.timestamp()
     mts = ts * 1000
     tzname = dt.tzname()
+    tzname = 'GMT' if(tzname == None) else tzname
     z = dt.strftime('%z')
+    z = '+0000' if(z == '') else z
     zone = ZONES_Z_MD[z] if(z!='+0000') else 'GMT'
     delta = dt.utcoffset()
+    delta = timedelta(0) if(delta == None) else delta
     soffset = delta.total_seconds()
     msoffset =  soffset * 1000
     yq = get_yq_via_m(m)
@@ -165,7 +250,7 @@ def dt2dict(dt):
     mt = get_mt(m,d)
     mw = get_mw(y,m,d)
     td = get_td(y,m,d)
-    wd = dt.weekday()
+    wd = dt.isoweekday()
     d = {
         "y":y,
         "m":m, 
@@ -197,15 +282,129 @@ def dt2dict(dt):
 def dt2ts(dt):
     return(dt.timestamp())
 
-#dt2str
-#
+def detect_fmt(s):
+    global NAME_TO_FMT_DICT
+    for name in NAME_TO_FMT_DICT:
+        fmt = NAME_TO_FMT_DICT[name]
+        try:
+            datetime.strptime(s,fmt)
+        except:
+            pass
+        else:
+            return(fmt)
+    return(None)
 
-#str2dict
-#str2dt
-#str2ts
+def dt2str(dt,fmt_or_name='YmdHMSZz'):
+    global FMT_TO_NAME_DICT
+    global NAME_TO_FMT_DICT
+    #if its a valid fmt_name
+    try:
+        fmt = NAME_TO_FMT_DICT[fmt_or_name]
+    except:
+        pass
+    else:
+        return(dt.strftime(fmt))
+    #if its a valid fmt
+    try:
+        s = dt.strftime(fmt_or_name)
+    except:
+        pass
+    else:
+        return(s)
+    return(None)
 
-#ts2dict
-#ts2dt
-#ts2str
+
+def str2dt(s,fmt_or_name=None):
+    global FMT_TO_NAME_DICT
+    global NAME_TO_FMT_DICT
+    if(fmt_or_name==None):
+        try:
+            fmt = detect_fmt(s)
+        except:
+            pass
+        else:
+            return(datetime.strptime(s,fmt))
+    else:
+        #if its a valid fmt_name
+        try:
+            fmt = NAME_TO_FMT_DICT[fmt_or_name]
+        except:
+            pass
+        else:
+            return(datetime.strptime(s,fmt))
+        #if its a valid fmt
+        try:
+            fmt = fmt_or_name
+        except:
+            pass
+        else:
+            return(datetime.strptime(s,fmt))
+        #
+        return(None)
+
+
+def str2dict(s,fmt_or_name=None):
+    dt = str2dt(s,fmt_or_name)
+    return(dt2dict(dt))
+
+def str2ts(s,fmt_or_name=None):
+    d = str2dict(s,fmt_or_name)
+    return(d['ts'])
+
+
+def zzo2tmzone(zzo):
+    tmzone = None
+    try:
+        tmzone = utcoffset2tmzone(zzo)
+    except:
+        try:
+            tmzone = zone2tmzone(zzo)
+        except:
+            try:
+                tmzone = z2tmzone(zzo)
+            except:
+                pass
+            else:
+                pass
+        else:
+            pass
+    else:
+        pass
+    return(tmzone)
+
+def ts2dt(ts,zzo='GMT+0'):
+    tmzone = zzo2tmzone(zzo)
+    soffset = get_soffset_from_tmzone(tmzone)
+    ts = ts - soffset
+    utc_dt = datetime.fromtimestamp(ts)
+    dt = utc_dt.replace(tzinfo=tmzone)
+    return(dt)
+
+
+def ts2dict(ts,zzo='GMT+0'):
+    dt = ts2dt(ts,zzo)
+    return(dt2dict(dt))
+
+
+def ts2str(ts,**kwargs):
+    zzo = eftl.dflt_kwargs('tz','GMT+0',**kwargs)
+    fmt_or_name = eftl.dflt_kwargs('fmt','YmdHMSZz',**kwargs)
+    dt = ts2dt(ts,zzo)
+    s = dt2str(dt,fmt_or_name)
+    return(s)
+
+def dict2ts(d):
+    return(d['ts'])
+
+def dict2dt(d):
+    ts = d['ts']
+    zzo = d['z']
+    dt = ts2dt(ts,zzo)
+    return(dt)
+
+def dict2str(d,fmt_or_name='YmdHMSfZz'):
+    dt = dict2dt(d) 
+    s = dt2str(dt,fmt_or_name)
+    return(s)
 
 

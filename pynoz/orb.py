@@ -29,7 +29,7 @@ def set_via_pl_from_root(root,pl,creat_leaf):
 
 def is_leaf(orb):
     lngth = org.__dict__.__len__()
-    return(lngth === 0)
+    return(lngth == 0)
 
 
 def get_children(orb):
