@@ -154,7 +154,7 @@ def get_yd(y,m,d):
     '''
     yd = 0 
     for i in range(1,m):
-        yd = yd + get_days_num_of_month(y,m)
+        yd = yd + get_days_num_of_month(y,i)
     yd = yd + d
     return(yd)
 
