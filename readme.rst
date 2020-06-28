@@ -42,10 +42,10 @@ Usage
          'msoffset': 28800000.0,        # msoffset
          'yq': 2,                       # quarter-of-year
          'yw': 26,                      # week-of-year
-         'yd': 177,                     # day-of-year
+         'yd': 179,                     # day-of-year
          'qm': 3,                       # month-of-quarter
          'qw': 13,                      # week-of-quarter
-         'qd': 87,                      # day-of-quarter
+         'qd': 88,                      # day-of-quarter
          'mt': 3,                       # ten ,旬, each-ten-days, used-in-chinese
          'mw': 4,                       # week-of-month
          'td': 7,                       # day-of-ten
