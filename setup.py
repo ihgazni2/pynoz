@@ -5,8 +5,8 @@ requirements = []
 
 setup(
       name="pynoz",
-      version = "0.0.7", #@version@#
-      description="handle,.in progressing..,APIs",
+      version = "0.0.9", #@version@#
+      description="simple tools for time date timezone",
       author="ihgazni2",
       url="https://github.com/ihgazni2/pynoz",
       author_email='', 
@@ -37,6 +37,7 @@ setup(
 
 # python3 setup.py bdist --formats=tar
 # python3 setup.py sdist
+
 
 
 
